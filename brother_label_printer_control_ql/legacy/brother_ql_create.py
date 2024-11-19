@@ -2,8 +2,9 @@ import argparse
 import logging
 import sys
 
-from ..devicedependent import label_type_specs
 from ..exceptions import BrotherQLUnknownModel
+from ..labels import Label, Labels
+from ..models import Models
 from ..raster import BrotherQLRaster
 
 try:
@@ -14,8 +15,8 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def create_label(qlr: BrotherQLRaster, image, label_size, threshold=70, cut=True, dither=False, compress=False, red=False, **kwargs):
-    qlr.generate_instructions([image], label_size, threshold=threshold, cut=cut, dither=dither, compress=compress, red=red, **kwargs)
+def create_label(qlr: BrotherQLRaster, image, label: Label, threshold=70, cut=True, dither=False, compress=False, red=False, **kwargs):
+    qlr.generate_instructions([image], label, threshold=threshold, cut=cut, dither=dither, compress=compress, red=red, **kwargs)
 
 
 def main():
@@ -47,22 +48,21 @@ def main():
     logging.basicConfig(level=args.loglevel)
 
     args.model = args.model.upper()
+    model = Models.from_identifier(args.model)
 
     try:
-        qlr = BrotherQLRaster(args.model)
+        qlr = BrotherQLRaster(model)
     except BrotherQLUnknownModel:
         sys.exit("Unknown model. Use the command   brother_ql_info list-models   to show available models.")
 
     try:
-        label_type_specs[args.label_size]
+        label = Labels.from_identifier(args.label_size)
     except ValueError:
         sys.exit("Unknown label_size. Check available sizes with the command   brother_ql_info list-label-sizes")
 
     qlr.exception_on_warning = True
 
-    create_label(
-        qlr, args.image, args.label_size, threshold=args.threshold, cut=args.cut, rotate=args.rotate, dither=args.dither, compress=args.compress, red=args.red, dpi_600=args.dpi_600, hq=args.hq
-    )
+    create_label(label, threshold=args.threshold, cut=args.cut, rotate=args.rotate, dither=args.dither, compress=args.compress, red=args.red, dpi_600=args.dpi_600, hq=args.hq)
 
     args.outfile.write(qlr.data)
 

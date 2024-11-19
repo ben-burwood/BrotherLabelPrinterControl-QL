@@ -1,7 +1,7 @@
-import copy
 from dataclasses import dataclass
+from enum import Enum
 
-from .utils.elements_manager import ElementsManager
+from .exceptions import BrotherQLUnknownModel
 
 @dataclass
 class Model:
@@ -39,27 +39,36 @@ class Model:
     def name(self):
         return self.identifier
 
-
-ALL_MODELS = [
-    Model("QL-500", (295, 11811), compression=False, mode_setting=False, expanded_mode=False, cutting=False),
-    Model("QL-550", (295, 11811), compression=False, mode_setting=False),
-    Model("QL-560", (295, 11811), compression=False, mode_setting=False),
-    Model("QL-570", (150, 11811), compression=False, mode_setting=False),
-    Model("QL-580N", (150, 11811)),
-    Model("QL-650TD", (295, 11811)),
-    Model("QL-700", (150, 11811), compression=False, mode_setting=False),
-    Model("QL-710W", (150, 11811)),
-    Model("QL-720NW", (150, 11811)),
-    Model("QL-800", (150, 11811), two_color=True, compression=False),
-    Model("QL-810W", (150, 11811), two_color=True),
-    Model("QL-820NWB", (150, 11811), two_color=True),
-    Model("QL-1050", (295, 35433), number_bytes_per_row=162, additional_offset_r=44),
-    Model("QL-1060N", (295, 35433), number_bytes_per_row=162, additional_offset_r=44),
-    Model("PT-P750W", (31, 14172), number_bytes_per_row=16),
-    Model("PT-P900W", (57, 28346), number_bytes_per_row=70),
-]
+    @property
+    def pixel_width(self) -> int:
+        return self.number_bytes_per_row * 8
 
 
-class ModelsManager(ElementsManager):
-    DEFAULT_ELEMENTS = copy.copy(ALL_MODELS)
-    ELEMENTS_NAME = "model"
+class Models(Enum):
+    QL500 = Model("QL-500", (295, 11811), compression=False, mode_setting=False, expanded_mode=False, cutting=False)
+    QL550 = Model("QL-550", (295, 11811), compression=False, mode_setting=False)
+    QL560 = Model("QL-560", (295, 11811), compression=False, mode_setting=False)
+    QL570 = Model("QL-570", (150, 11811), compression=False, mode_setting=False)
+    QL580N = Model("QL-580N", (150, 11811))
+    QL650TD = Model("QL-650TD", (295, 11811))
+    QL700 = Model("QL-700", (150, 11811), compression=False, mode_setting=False)
+    QL710W = Model("QL-710W", (150, 11811))
+    QL720NW = Model("QL-720NW", (150, 11811))
+    QL800 = Model("QL-800", (150, 11811), two_color=True, compression=False)
+    QL810W = Model("QL-810W", (150, 11811), two_color=True)
+    QL820NWB = Model("QL-820NWB", (150, 11811), two_color=True)
+    QL1050 = Model("QL-1050", (295, 35433), number_bytes_per_row=162, additional_offset_r=44)
+    QL1060N = Model("QL-1060N", (295, 35433), number_bytes_per_row=162, additional_offset_r=44)
+    PTP750W = Model("PT-P750W", (31, 14172), number_bytes_per_row=16)
+    PTP900W = Model("PT-P900W", (57, 28346), number_bytes_per_row=70)
+
+    @staticmethod
+    def from_identifier(identifier: str) -> Model:
+        try:
+            return Models[identifier.upper()].value
+        except KeyError:
+            raise BrotherQLUnknownModel(f"Model '{identifier}' not implemented.")
+
+    @staticmethod
+    def identifiers() -> list[str]:
+        return [model.value.identifier for model in Models]

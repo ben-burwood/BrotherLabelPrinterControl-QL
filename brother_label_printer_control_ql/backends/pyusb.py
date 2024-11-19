@@ -13,8 +13,7 @@ import usb.util
 from select import select
 
 from .abstract import BaseBrotherQLBackend
-from .strategies import RetryStrategy
-
+from .retry_strategies import RetryStrategy
 
 class BrotherQLBackendPyUSB(BaseBrotherQLBackend):
     """

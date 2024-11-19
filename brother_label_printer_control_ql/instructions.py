@@ -4,8 +4,8 @@ from io import BytesIO
 import packbits
 from PIL import Image
 
-from brother_label_printer_control_ql.exceptions import BrotherQLRasterError
-from brother_label_printer_control_ql.utils.pixels import get_pixel_width
+from .exceptions import BrotherQLRasterError
+from .models import Model
 
 def add_initialize(data: bytes) -> bytes:
     data += b"\x1B\x40"  # ESC @
@@ -100,10 +100,10 @@ def add_compression(data: bytes, compression: bool) -> bytes:
     return data
 
 
-def add_raster_data(data: bytes, model: str, compression: bool, image: Image, second_image: Image = None) -> bytes:
-    if image.size[0] != get_pixel_width(model):
+def add_raster_data(data: bytes, model: Model, compression: bool, image: Image, second_image: Image = None) -> bytes:
+    if image.size[0] != model.pixel_width:
         fmt = "Wrong pixel width: {}, expected {}"
-        raise BrotherQLRasterError(fmt.format(image.size[0], get_pixel_width(model)))
+        raise BrotherQLRasterError(fmt.format(image.size[0], model.pixel_width))
 
     images = [image]
     if second_image:

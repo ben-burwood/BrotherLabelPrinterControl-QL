@@ -14,22 +14,7 @@ import PIL.ImageChops
 import PIL.ImageOps
 from PIL import Image
 
-from brother_label_printer_control_ql.labels.label_options import LabelOptions
-from .devicedependent import (
-    DIE_CUT_LABEL,
-    ENDLESS_LABEL,
-    PTOUCH_ENDLESS_LABEL,
-    ROUND_DIE_CUT_LABEL,
-    compressionsupport,
-    cuttingsupport,
-    expandedmode,
-    label_type_specs,
-    models,
-    modesetting,
-    right_margin_addition,
-    two_color_support,
-)
-from .exceptions import BrotherQLError, BrotherQLRasterError, BrotherQLUnknownModel, BrotherQLUnsupportedCmd
+from .exceptions import BrotherQLError, BrotherQLRasterError, BrotherQLUnsupportedCmd
 from .instructions import (
     add_autocut,
     add_compression,
@@ -44,8 +29,10 @@ from .instructions import (
     add_status_information,
     add_switch_mode,
 )
+from .labels import FormFactor, Label
+from .labels.label_options import LabelOptions
+from .models import Model, Models
 from .utils.image_trafos import filtered_hsv
-from .utils.pixels import get_pixel_width
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +50,8 @@ class BrotherQLRaster:
     :ivar bool exception_on_warning: If set to True, an exception is raised if trying to add instruction which are not supported on the selected model. If set to False, the instruction is simply ignored and a warning sent to logging/stderr.
     """
 
-    def __init__(self, model: str = "QL-500") -> None:
-        if model not in models:
-            raise BrotherQLUnknownModel()
-
-        self.model = model
+    def __init__(self, model: Model = Models.QL500.value) -> None:
+        self.model: Model = model
         self.data = b""
         self._pquality = True
         self.page_number = 0
@@ -133,10 +117,6 @@ class BrotherQLRaster:
         """
         self._warn(problem, kind=BrotherQLUnsupportedCmd)
 
-    @property
-    def two_color_support(self) -> bool:
-        return self.model in two_color_support
-
     def add_initialize(self, data: bytes) -> bytes:
         self.page_number = 0
         return add_initialize(data)
@@ -147,7 +127,7 @@ class BrotherQLRaster:
         Switch to the raster mode on the printers that support
         the mode change (others are in raster mode already).
         """
-        if self.model not in modesetting:
+        if not self.model.mode_setting:
             self._unsupported("Trying to switch the operating mode on a printer that doesn't support the command.")
             return data
         return add_switch_mode(data)
@@ -156,25 +136,25 @@ class BrotherQLRaster:
         return add_media_and_quality(data, rnumber, self._pquality, self.mtype, self.mwidth, self.mlength, self.page_number)
 
     def add_autocut(self, data: bytes, autocut: bool = False) -> bytes:
-        if self.model not in cuttingsupport:
+        if not self.model.cutting:
             self._unsupported("Trying to call add_autocut with a printer that doesn't support it")
             return data
 
         return add_autocut(data, autocut)
 
     def add_cut_every(self, data: bytes, n: int = 1) -> bytes:
-        if self.model not in cuttingsupport:
+        if not self.model.cutting:
             self._unsupported("Trying to call add_cut_every with a printer that doesn't support it")
             return data
 
         return add_cut_every(data, n)
 
     def add_expanded_mode(self, data: bytes) -> bytes:
-        if self.model not in expandedmode:
+        if not self.model.expanded_mode:
             self._unsupported("Trying to set expanded mode (dpi/cutting at end) on a printer that doesn't support it")
             return data
 
-        if self.two_color_printing and not self.two_color_support:
+        if self.two_color_printing and not self.model.two_color:
             self._unsupported("Trying to set two_color_printing in expanded mode on a printer that doesn't support it.")
             return data
 
@@ -189,7 +169,7 @@ class BrotherQLRaster:
 
         :param bool compression: Whether compression should be on or off
         """
-        if self.model not in compressionsupport:
+        if not self.model.compression:
             self._unsupported("Trying to set compression on a printer that doesn't support it")
             return data
 
@@ -208,7 +188,7 @@ class BrotherQLRaster:
         logger.debug("raster_image_size: {0}x{1}".format(*image.size))
         return add_raster_data(data, self.model, self._compression, image, second_image)
 
-    def generate_instructions(self, images: list[Image | str], label: str, **kwargs):
+    def generate_instructions(self, images: list[Image | str], label: Label, **kwargs):
         """Converts one or more images to a raster instruction file.
 
         :param qlr:
@@ -234,16 +214,14 @@ class BrotherQLRaster:
             * **hq**
             * **threshold**
         """
-        label_specs = label_type_specs[label]
-
-        dots_printable = label_specs["dots_printable"]
-        right_margin_dots = label_specs["right_margin_dots"]
-        right_margin_dots += right_margin_addition.get(self.model, 0)
-        device_pixel_width = get_pixel_width(self.model)
+        dots_printable = label.dots_printable
+        right_margin_dots = label.offset_r
+        right_margin_dots += self.model.additional_offset_r
+        device_pixel_width = self.model.pixel_width
 
         label_options = LabelOptions.from_dict(kwargs)
 
-        if label_options.red and not self.two_color_support:
+        if label_options.red and not self.model.two_color:
             raise BrotherQLUnsupportedCmd("Printing in red is not supported with the selected model.")
 
         try:
@@ -285,7 +263,7 @@ class BrotherQLRaster:
             else:
                 dots_expected = dots_printable
 
-            if label_specs["kind"] in (ENDLESS_LABEL, PTOUCH_ENDLESS_LABEL):
+            if label.form_factor in (FormFactor.ENDLESS, FormFactor.PTOUCH_ENDLESS):
                 if label_options.rotate not in ("auto", 0):
                     im = im.rotate(label_options.rotate, expand=True)
                 if label_options.dpi_600:
@@ -298,7 +276,7 @@ class BrotherQLRaster:
                     new_im = Image.new(im.mode, (device_pixel_width, im.size[1]), (255,) * len(im.mode))
                     new_im.paste(im, (device_pixel_width - im.size[0] - right_margin_dots, 0))
                     im = new_im
-            elif label_specs["kind"] in (DIE_CUT_LABEL, ROUND_DIE_CUT_LABEL):
+            elif label.form_factor in (FormFactor.DIE_CUT, FormFactor.ROUND_DIE_CUT):
                 if label_options.rotate == "auto":
                     if im.size[0] == dots_expected[1] and im.size[1] == dots_expected[0]:
                         im = im.rotate(90, expand=True)
@@ -339,16 +317,16 @@ class BrotherQLRaster:
                     im = im.point(lambda x: 0 if x < label_options.threshold else 255, mode="1")
 
             self.data = add_status_information(self.data)
-            tape_size = label_specs["tape_size"]
-            if label_specs["kind"] in (DIE_CUT_LABEL, ROUND_DIE_CUT_LABEL):
+            tape_size = label.tape_size
+            if label.form_factor in (FormFactor.DIE_CUT, FormFactor.ROUND_DIE_CUT):
                 self.mtype = 0x0B
                 self.mwidth = tape_size[0]
                 self.mlength = tape_size[1]
-            elif label_specs["kind"] in (ENDLESS_LABEL,):
+            elif label.form_factor in (FormFactor.ENDLESS,):
                 self.mtype = 0x0A
                 self.mwidth = tape_size[0]
                 self.mlength = 0
-            elif label_specs["kind"] in (PTOUCH_ENDLESS_LABEL,):
+            elif label.form_factor in (FormFactor.PTOUCH_ENDLESS,):
                 self.mtype = 0x00
                 self.mwidth = tape_size[0]
                 self.mlength = 0
@@ -367,7 +345,7 @@ class BrotherQLRaster:
                 self.data = self.add_expanded_mode(self.data)
             except BrotherQLUnsupportedCmd:
                 pass
-            self.data = add_margins(self.data, label_specs["feed_margin"])
+            self.data = add_margins(self.data, label.feed_margin)
             try:
                 if label_options.compress:
                     self.data = self.add_compression(self.data, True)

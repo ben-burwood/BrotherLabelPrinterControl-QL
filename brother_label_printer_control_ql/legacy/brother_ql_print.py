@@ -2,8 +2,8 @@ import argparse
 import logging
 import sys
 
-from brother_label_printer_control_ql.utils.output_helpers import log_discovered_devices
 from ..backends import Backend
+from ..utils.output_helpers import log_discovered_devices
 
 logger = logging.getLogger(__name__)
 

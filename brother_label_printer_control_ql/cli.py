@@ -5,7 +5,8 @@ import logging
 import click
 
 from .backends import Backend
-from .devicedependent import label_sizes, models
+from .labels import Labels
+from .models import Models
 
 logger = logging.getLogger("brother_ql")
 
@@ -15,7 +16,7 @@ printer_help = "The identifier for the printer. This could be a string like tcp:
 
 @click.group()
 @click.option("-b", "--backend", type=click.Choice(Backend.all()), envvar="BROTHER_QL_BACKEND")
-@click.option("-m", "--model", type=click.Choice(models), envvar="BROTHER_QL_MODEL")
+@click.option("-m", "--model", type=click.Choice(Models.identifiers()), envvar="BROTHER_QL_MODEL")
 @click.option("-p", "--printer", metavar="PRINTER_IDENTIFIER", envvar="BROTHER_QL_PRINTER", help=printer_help)
 @click.option("--debug", is_flag=True)
 @click.version_option()
@@ -67,7 +68,7 @@ def models_cmd(ctx, *args, **kwargs):
     List the choices for --model
     """
     print("Supported models:")
-    for model in models:
+    for model in Models.identifiers():
         print(" " + model)
 
 
@@ -79,7 +80,7 @@ def labels(ctx, *args, **kwargs):
     """
     from brother_label_printer_control_ql.utils.output_helpers import textual_label_description
 
-    print(textual_label_description(label_sizes))
+    print(textual_label_description([label.value for label in Labels]))
 
 
 @info.command()
@@ -132,7 +133,7 @@ def env(ctx, *args, **kwargs):
 @click.option(
     "-l",
     "--label",
-    type=click.Choice(label_sizes),
+    type=click.Choice(Labels.identifiers()),
     envvar="BROTHER_QL_LABEL",
     help="The label (size, type - die-cut or endless). Run `brother_ql info labels` for a full list including ideal pixel dimensions.",
 )
@@ -159,7 +160,7 @@ def env(ctx, *args, **kwargs):
 def print_cmd(ctx, *args, **kwargs):
     """Print a label of the provided IMAGE."""
     backend = Backend(ctx.meta.get("BACKEND", "pyusb"))
-    model = ctx.meta.get("MODEL")
+    model = Models.from_identifier(ctx.meta.get("MODEL"))
     printer = ctx.meta.get("PRINTER")
     from .raster import BrotherQLRaster
 
@@ -167,7 +168,11 @@ def print_cmd(ctx, *args, **kwargs):
     qlr.exception_on_warning = True
     kwargs["cut"] = not kwargs["no_cut"]
     del kwargs["no_cut"]
-    instructions = qlr.generate_instructions(**kwargs)
+    images = kwargs["images"]
+    del kwargs["images"]
+    label = Labels.from_identifier(kwargs["label"])
+    del kwargs["label"]
+    instructions = qlr.generate_instructions(images, label, **kwargs)
 
     printer = backend.printer(printer)
     printer.send(instructions=instructions, blocking=True)

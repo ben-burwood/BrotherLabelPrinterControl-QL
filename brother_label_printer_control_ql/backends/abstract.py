@@ -3,8 +3,8 @@ import time
 from abc import ABC, abstractmethod
 from builtins import bytes
 
-from brother_label_printer_control_ql.backends.status import PrintOutcome, SendStatus
-from brother_label_printer_control_ql.reader import interpret_response
+from .status import PrintOutcome, SendStatus
+from ..reader import interpret_response
 
 logger = logging.getLogger(__name__)
 
