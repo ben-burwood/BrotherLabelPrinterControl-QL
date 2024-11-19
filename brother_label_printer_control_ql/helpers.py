@@ -1,7 +1,7 @@
-
 import logging
 
 logger = logging.getLogger(__name__)
+
 
 class ElementsManager(object):
     """
@@ -10,6 +10,7 @@ class ElementsManager(object):
     * can be compared for equality against each other
     * have the attribute .identifier
     """
+
     DEFAULT_ELEMENTS = []
     ELEMENT_NAME = "element"
 
@@ -21,7 +22,8 @@ class ElementsManager(object):
 
     def register(self, element, pos=-1):
         if element not in self._elements:
-            if pos == -1: pos = len(self._labels)
+            if pos == -1:
+                pos = len(self._labels)
             self._labels.insert(len(self._labels), label)
         else:
             logger.warn("Won't register %s as it's already present: %s", self.ELEMENT_NAME, element)

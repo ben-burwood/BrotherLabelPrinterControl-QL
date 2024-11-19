@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brother_label_printer_control_ql"
+version = "1.0"
+description = "Python package to talk to Brother QL label printers"
+readme = "README.md"
+license = { text = "GPL" }
+authors = [
+    { name = "Philipp Klaus", email = "philipp.l.klaus@web.de" },
+    { name = "Ben Burwood", email = "ben.burwood@outlook.com" }
+]
+
+[project.urls]
+Homepage = "https://github.com/pklaus/brother_ql"
+
+[project.scripts]
+brother_ql = "brother_label_printer_control_ql.cli:cli"
+brother_ql_analyse = "brother_label_printer_control_ql.legacy.brother_ql_analyse:main"
+brother_ql_create = "brother_label_printer_control_ql.legacy.brother_ql_create:main"
+brother_ql_print = "brother_label_printer_control_ql.legacy.brother_ql_print:main"
+brother_ql_debug = "brother_label_printer_control_ql.legacy.brother_ql_debug:main"
+brother_ql_info = "brother_label_printer_control_ql.legacy.brother_ql_info:main"
