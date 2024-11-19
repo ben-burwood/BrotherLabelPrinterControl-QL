@@ -188,7 +188,7 @@ class BrotherQLRaster:
         logger.debug("raster_image_size: {0}x{1}".format(*image.size))
         return add_raster_data(data, self.model, self._compression, image, second_image)
 
-    def generate_instructions(self, images: list[Image | str], label: Label, **kwargs):
+    def generate_instructions(self, images: list, label: Label, **kwargs):
         """Converts one or more images to a raster instruction file.
 
         :param qlr:

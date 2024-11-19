@@ -7,6 +7,7 @@ from PIL import Image
 from .exceptions import BrotherQLRasterError
 from .models import Model
 
+
 def add_initialize(data: bytes) -> bytes:
     data += b"\x1B\x40"  # ESC @
     return data

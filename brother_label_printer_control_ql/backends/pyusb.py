@@ -15,6 +15,7 @@ from select import select
 from .abstract import BaseBrotherQLBackend
 from .retry_strategies import RetryStrategy
 
+
 class BrotherQLBackendPyUSB(BaseBrotherQLBackend):
     """
     BrotherQL backend using PyUSB

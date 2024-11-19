@@ -2,10 +2,10 @@ import argparse
 import logging
 import sys
 
-from ..exceptions import BrotherQLUnknownModel
-from ..labels import Label, Labels
-from ..models import Models
-from ..raster import BrotherQLRaster
+from brother_label_printer_control_ql.exceptions import BrotherQLUnknownModel
+from brother_label_printer_control_ql.labels import Label, Labels
+from brother_label_printer_control_ql.models import Models
+from brother_label_printer_control_ql.raster import BrotherQLRaster
 
 try:
     stdout = sys.stdout.buffer

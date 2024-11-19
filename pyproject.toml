@@ -17,9 +17,9 @@ authors = [
 Homepage = "https://github.com/pklaus/brother_ql"
 
 [project.scripts]
-brother_ql = "brother_label_printer_control_ql.cli:cli"
-brother_ql_analyse = "brother_label_printer_control_ql.legacy.brother_ql_analyse:main"
-brother_ql_create = "brother_label_printer_control_ql.legacy.brother_ql_create:main"
-brother_ql_print = "brother_label_printer_control_ql.legacy.brother_ql_print:main"
-brother_ql_debug = "brother_label_printer_control_ql.legacy.brother_ql_debug:main"
-brother_ql_info = "brother_label_printer_control_ql.legacy.brother_ql_info:main"
+brother_ql = "brother_label_printer_control_ql.cli.__init__:cli"
+brother_ql_analyse = "brother_label_printer_control_ql.cli.legacy.brother_ql_analyse:main"
+brother_ql_create = "brother_label_printer_control_ql.cli.legacy.brother_ql_create:main"
+brother_ql_print = "brother_label_printer_control_ql.cli.legacy.brother_ql_print:main"
+brother_ql_debug = "brother_label_printer_control_ql.cli.legacy.brother_ql_debug:main"
+brother_ql_info = "brother_label_printer_control_ql.cli.legacy.brother_ql_info:main"

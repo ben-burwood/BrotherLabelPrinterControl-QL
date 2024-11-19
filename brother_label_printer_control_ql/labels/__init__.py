@@ -5,6 +5,7 @@ from .color import Color
 from .form_factor import FormFactor
 from ..models import Model, Models
 
+
 @dataclass(frozen=True)
 class Label:
     """

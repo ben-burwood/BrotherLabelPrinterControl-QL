@@ -24,6 +24,7 @@ def chunker(data: bytes, raise_exception: bool = False):
     while True:
         if len(data) == 0:
             break
+
         try:
             opcode = match_opcode(data)
         except:
@@ -34,6 +35,7 @@ def chunker(data: bytes, raise_exception: bool = False):
                 logger.warning(msg)
                 data = data[1:]
                 continue
+
         opcode_def = OPCODES[opcode]
         num_bytes = len(opcode)
         if opcode_def[1] > 0:
@@ -42,9 +44,12 @@ def chunker(data: bytes, raise_exception: bool = False):
             num_bytes += data[2] + 2
         elif opcode_def[0] in ("raster P-touch",):
             num_bytes += data[1] + data[2] * 256 + 2
+
         # payload = data[len(opcode):num_bytes]
         instructions.append(data[:num_bytes])
+
         yield instructions[-1]
+
         data = data[num_bytes:]
     # return instructions
 
@@ -57,6 +62,7 @@ def match_opcode(data: bytes) -> str:
 
 def interpret_response(data: bytes) -> dict:
     data = bytes(data)
+
     if len(data) < 32:
         raise NameError("Insufficient amount of data received", hex_format(data))
     if not data.startswith(b"\x80\x20\x42"):
@@ -64,6 +70,7 @@ def interpret_response(data: bytes) -> dict:
 
     for i, byte_name in enumerate(RESP_BYTE_NAMES):
         logger.debug("Byte %2d %24s %02X", i, byte_name + ":", data[i])
+
     errors = []
     error_info_1 = data[8]
     error_info_2 = data[9]

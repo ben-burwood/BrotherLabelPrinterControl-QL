@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 
-from ..reader import BrotherQLReader
+from brother_label_printer_control_ql.reader import BrotherQLReader
 
 def main():
 
