@@ -4,7 +4,7 @@ import logging
 
 import click
 
-from .backends import available_backends
+from .backends import Backend
 from .devicedependent import label_sizes, models
 
 logger = logging.getLogger("brother_ql")
@@ -14,7 +14,7 @@ printer_help = "The identifier for the printer. This could be a string like tcp:
 
 
 @click.group()
-@click.option("-b", "--backend", type=click.Choice(available_backends), envvar="BROTHER_QL_BACKEND")
+@click.option("-b", "--backend", type=click.Choice(Backend.all()), envvar="BROTHER_QL_BACKEND")
 @click.option("-m", "--model", type=click.Choice(models), envvar="BROTHER_QL_MODEL")
 @click.option("-p", "--printer", metavar="PRINTER_IDENTIFIER", envvar="BROTHER_QL_PRINTER", help=printer_help)
 @click.option("--debug", is_flag=True)
@@ -41,18 +41,17 @@ def cli(ctx, *args, **kwargs):
 @click.pass_context
 def discover(ctx):
     """find connected label printers"""
-    backend = ctx.meta.get("BACKEND", "pyusb")
+    backend = Backend(ctx.meta.get("BACKEND", "pyusb"))
     discover_and_list_available_devices(backend)
 
 
-def discover_and_list_available_devices(backend):
-    from .backends.helpers import discover
+def discover_and_list_available_devices(backend: Backend):
+    available_devices = backend.discover()
 
-    available_devices = discover(backend_identifier=backend)
-    from .output_helpers import log_discovered_devices, textual_description_discovered_devices
+    from .output_helpers import log_discovered_devices
 
     log_discovered_devices(available_devices)
-    print(textual_description_discovered_devices(available_devices))
+    print(available_devices)
 
 
 @cli.group()
@@ -159,11 +158,10 @@ def env(ctx, *args, **kwargs):
 @click.pass_context
 def print_cmd(ctx, *args, **kwargs):
     """Print a label of the provided IMAGE."""
-    backend = ctx.meta.get("BACKEND", "pyusb")
+    backend = Backend(ctx.meta.get("BACKEND", "pyusb"))
     model = ctx.meta.get("MODEL")
     printer = ctx.meta.get("PRINTER")
     from .conversion import convert
-    from .backends.helpers import send
     from .raster import BrotherQLRaster
 
     qlr = BrotherQLRaster(model)
@@ -171,7 +169,9 @@ def print_cmd(ctx, *args, **kwargs):
     kwargs["cut"] = not kwargs["no_cut"]
     del kwargs["no_cut"]
     instructions = convert(qlr=qlr, **kwargs)
-    send(instructions=instructions, printer_identifier=printer, backend_identifier=backend, blocking=True)
+
+    printer = backend.printer(printer)
+    printer.send(instructions=instructions, blocking=True)
 
 
 @cli.command(name="analyze", help="interpret a binary file containing raster instructions for the Brother QL-Series printers")
@@ -191,9 +191,9 @@ def analyze_cmd(ctx, *args, **kwargs):
 @click.argument("instructions", type=click.File("rb"))
 @click.pass_context
 def send_cmd(ctx, *args, **kwargs):
-    from .backends.helpers import send
-
-    send(instructions=kwargs["instructions"].read(), printer_identifier=ctx.meta.get("PRINTER"), backend_identifier=ctx.meta.get("BACKEND"), blocking=True)
+    backend = Backend(ctx.meta.get("BACKEND"))
+    printer = backend.printer(ctx.meta.get("PRINTER"))
+    printer.send(instructions=kwargs["instructions"].read(), blocking=True)
 
 
 if __name__ == "__main__":

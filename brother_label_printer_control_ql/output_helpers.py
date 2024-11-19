@@ -25,15 +25,7 @@ def textual_label_description(labels_to_include):
     return output
 
 
-def log_discovered_devices(available_devices, level=logging.INFO):
+def log_discovered_devices(available_devices: list[str], level=logging.INFO) -> None:
     for ad in available_devices:
-        result = {"model": "unknown"}
-        result.update(ad)
+        result = {"model": "unknown", "identifier": ad}
         logger.log(level, "  Found a label printer: {identifier}  (model: {model})".format(**result))
-
-
-def textual_description_discovered_devices(available_devices):
-    output = ""
-    for ad in available_devices:
-        output += ad["identifier"]
-    return output

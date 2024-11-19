@@ -2,7 +2,7 @@ import argparse
 import logging
 import time
 
-from ..backends import backend_factory, guess_backend
+from ..backends import Backend
 from ..reader import OPCODES, chunker, hex_format, interpret_response, match_opcode, merge_specific_instructions
 
 logger = logging.getLogger(__name__)
@@ -10,9 +10,9 @@ logger = logging.getLogger(__name__)
 
 class BrotherQL_USBdebug(object):
 
-    def __init__(self, dev, instructions_data, backend="linux_kernel"):
+    def __init__(self, dev, instructions_data, backend: Backend = Backend.LINUX_KERNEL):
 
-        be_cls = backend_factory(backend)["backend_class"]
+        be_cls = backend.printer()
         self.be = be_cls(dev)
 
         self.sleep_time = 0.0
@@ -101,9 +101,9 @@ def main():
     logging.basicConfig(level=loglevel, format="%(levelname)s: %(message)s")
 
     try:
-        backend = guess_backend(args.dev)
+        backend = Backend.detect(args.dev)
     except ValueError as e:
-        parser.error(e.msg)
+        parser.error(e.__str__())
 
     br = BrotherQL_USBdebug(args.dev, args.file, backend=backend)
     if args.interactive:
