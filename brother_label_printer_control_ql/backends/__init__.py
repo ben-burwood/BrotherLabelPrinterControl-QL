@@ -4,6 +4,7 @@ from typing import Type
 from .abstract import BaseBrotherQLBackend, logger
 from .pyusb import BrotherQLBackendPyUSB
 
+
 class Backend(Enum):
     PYUSB = "pyusb"
     NETWORK = "network"

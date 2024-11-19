@@ -8,15 +8,13 @@ The central piece of code in this module is the class
 """
 
 import logging
-import struct
-from io import BytesIO
 from typing import Type
 
 import PIL.ImageChops
 import PIL.ImageOps
-import packbits
 from PIL import Image
 
+from brother_label_printer_control_ql.labels.label_options import LabelOptions
 from .devicedependent import (
     DIE_CUT_LABEL,
     ENDLESS_LABEL,
@@ -28,12 +26,26 @@ from .devicedependent import (
     label_type_specs,
     models,
     modesetting,
-    number_bytes_per_row,
     right_margin_addition,
     two_color_support,
 )
 from .exceptions import BrotherQLError, BrotherQLRasterError, BrotherQLUnknownModel, BrotherQLUnsupportedCmd
+from .instructions import (
+    add_autocut,
+    add_compression,
+    add_cut_every,
+    add_expanded_mode,
+    add_initialize,
+    add_invalidate,
+    add_margins,
+    add_media_and_quality,
+    add_print,
+    add_raster_data,
+    add_status_information,
+    add_switch_mode,
+)
 from .utils.image_trafos import filtered_hsv
+from .utils.pixels import get_pixel_width
 
 logger = logging.getLogger(__name__)
 
@@ -125,15 +137,11 @@ class BrotherQLRaster:
     def two_color_support(self) -> bool:
         return self.model in two_color_support
 
-    def add_initialize(self) -> None:
+    def add_initialize(self, data: bytes) -> bytes:
         self.page_number = 0
-        self.data += b"\x1B\x40"  # ESC @
+        return add_initialize(data)
 
-    def add_status_information(self) -> None:
-        """Status Information Request"""
-        self.data += b"\x1B\x69\x53"  # ESC i S
-
-    def add_switch_mode(self) -> None:
+    def add_switch_mode(self, data: bytes) -> bytes:
         """
         Switch dynamic command mode
         Switch to the raster mode on the printers that support
@@ -141,65 +149,38 @@ class BrotherQLRaster:
         """
         if self.model not in modesetting:
             self._unsupported("Trying to switch the operating mode on a printer that doesn't support the command.")
-            return
-        self.data += b"\x1B\x69\x61\x01"  # ESC i a
+            return data
+        return add_switch_mode(data)
 
-    def add_invalidate(self) -> None:
-        """clear command buffer"""
-        self.data += b"\x00" * 200
+    def add_media_and_quality(self, data: bytes, rnumber: int) -> bytes:
+        return add_media_and_quality(data, rnumber, self._pquality, self.mtype, self.mwidth, self.mlength, self.page_number)
 
-    def add_media_and_quality(self, rnumber: bytes) -> None:
-        self.data += b"\x1B\x69\x7A"  # ESC i z
-        valid_flags = 0x80
-        valid_flags |= (self._mtype is not None) << 1
-        valid_flags |= (self._mwidth is not None) << 2
-        valid_flags |= (self._mlength is not None) << 3
-        valid_flags |= self._pquality << 6
-        self.data += bytes([valid_flags])
-        vals = [self._mtype, self._mwidth, self._mlength]
-        self.data += b"".join(b"\x00" if val is None else val for val in vals)
-        self.data += struct.pack("<L", rnumber)
-        self.data += bytes([0 if self.page_number == 0 else 1])
-        self.data += b"\x00"
-        # INFO:  media/quality (1B 69 7A) --> found! (payload: 8E 0A 3E 00 D2 00 00 00 00 00)
-
-    def add_autocut(self, autocut: bool = False) -> None:
+    def add_autocut(self, data: bytes, autocut: bool = False) -> bytes:
         if self.model not in cuttingsupport:
             self._unsupported("Trying to call add_autocut with a printer that doesn't support it")
-            return
+            return data
 
-        self.data += b"\x1B\x69\x4D"  # ESC i M
-        self.data += bytes([autocut << 6])
+        return add_autocut(data, autocut)
 
-    def add_cut_every(self, n: int = 1) -> None:
+    def add_cut_every(self, data: bytes, n: int = 1) -> bytes:
         if self.model not in cuttingsupport:
             self._unsupported("Trying to call add_cut_every with a printer that doesn't support it")
-            return
+            return data
 
-        self.data += b"\x1B\x69\x41"  # ESC i A
-        self.data += bytes([n & 0xFF])
+        return add_cut_every(data, n)
 
-    def add_expanded_mode(self) -> None:
+    def add_expanded_mode(self, data: bytes) -> bytes:
         if self.model not in expandedmode:
             self._unsupported("Trying to set expanded mode (dpi/cutting at end) on a printer that doesn't support it")
-            return
+            return data
 
         if self.two_color_printing and not self.two_color_support:
             self._unsupported("Trying to set two_color_printing in expanded mode on a printer that doesn't support it.")
-            return
+            return data
 
-        self.data += b"\x1B\x69\x4B"  # ESC i K
-        flags = 0x00
-        flags |= self.cut_at_end << 3
-        flags |= self.dpi_600 << 6
-        flags |= self.two_color_printing << 0
-        self.data += bytes([flags])
+        return add_expanded_mode(data, self.cut_at_end, self.dpi_600, self.two_color_printing)
 
-    def add_margins(self, dots: int = 0x23) -> None:
-        self.data += b"\x1B\x69\x64"  # ESC i d
-        self.data += struct.pack("<H", dots)
-
-    def add_compression(self, compression: bool = True) -> None:
+    def add_compression(self, data: bytes, compression: bool = True) -> bytes:
         """
         Add an instruction enabling or disabling compression for the transmitted raster image lines.
         Not all models support compression. If the specific model doesn't support it but this method
@@ -210,20 +191,12 @@ class BrotherQLRaster:
         """
         if self.model not in compressionsupport:
             self._unsupported("Trying to set compression on a printer that doesn't support it")
-            return
+            return data
 
         self._compression = compression
-        self.data += b"\x4D"  # M
-        self.data += bytes([compression << 1])
+        return add_compression(data, compression)
 
-    def get_pixel_width(self) -> int:
-        try:
-            nbpr = number_bytes_per_row[self.model]
-        except KeyError:
-            nbpr = number_bytes_per_row["default"]
-        return nbpr * 8
-
-    def add_raster_data(self, image: Image, second_image: Image = None) -> None:
+    def add_raster_data(self, data: bytes, image: Image, second_image: Image = None) -> bytes:
         """
         Add the image data to the instructions.
         The provided image has to be binary (every pixel
@@ -233,51 +206,7 @@ class BrotherQLRaster:
         :param PIL.Image.Image second_image: A second image with a separate color layer (red layer for the QL-800 series)
         """
         logger.debug("raster_image_size: {0}x{1}".format(*image.size))
-        if image.size[0] != self.get_pixel_width():
-            fmt = "Wrong pixel width: {}, expected {}"
-            raise BrotherQLRasterError(fmt.format(image.size[0], self.get_pixel_width()))
-
-        images = [image]
-        if second_image:
-            if image.size != second_image.size:
-                fmt = "First and second image don't have the same dimesions: {} vs {}."
-                raise BrotherQLRasterError(fmt.format(image.size, second_image.size))
-            images.append(second_image)
-
-        frames = []
-        for image in images:
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-            image = image.convert("1")
-            frames.append(bytes(image.tobytes(encoder_name="raw")))
-
-        frame_len = len(frames[0])
-        row_len = images[0].size[0] // 8
-        start = 0
-        file_str = BytesIO()
-        while start + row_len <= frame_len:
-            for i, frame in enumerate(frames):
-                row = frame[start : start + row_len]
-                if self._compression:
-                    row = packbits.encode(row)
-                translen = len(row)  # number of bytes to be transmitted
-                if self.model.startswith("PT"):
-                    file_str.write(b"\x47")
-                    file_str.write(bytes([translen % 256, translen // 256]))
-                else:
-                    if second_image:
-                        file_str.write(b"\x77\x01" if i == 0 else b"\x77\x02")
-                    else:
-                        file_str.write(b"\x67\x00")
-                    file_str.write(bytes([translen]))
-                file_str.write(row)
-            start += row_len
-        self.data += file_str.getvalue()
-
-    def add_print(self, last_page: bool = True) -> None:
-        if last_page:
-            self.data += b"\x1A"  # 0x1A = ^Z = SUB; here: EOF = End of File
-        else:
-            self.data += b"\x0C"  # 0x0C = FF  = Form Feed
+        return add_raster_data(data, self.model, self._compression, image, second_image)
 
     def generate_instructions(self, images: list[Image | str], label: str, **kwargs):
         """Converts one or more images to a raster instruction file.
@@ -310,40 +239,23 @@ class BrotherQLRaster:
         dots_printable = label_specs["dots_printable"]
         right_margin_dots = label_specs["right_margin_dots"]
         right_margin_dots += right_margin_addition.get(self.model, 0)
-        device_pixel_width = self.get_pixel_width()
+        device_pixel_width = get_pixel_width(self.model)
 
-        cut = kwargs.get("cut", True)
+        label_options = LabelOptions.from_dict(kwargs)
 
-        dither = kwargs.get("dither", False)
-
-        compress = kwargs.get("compress", False)
-
-        red = kwargs.get("red", False)
-
-        rotate = kwargs.get("rotate", "auto")
-        rotate = int(rotate) if rotate != "auto" else rotate
-
-        dpi_600 = kwargs.get("dpi_600", False)
-
-        hq = kwargs.get("hq", True)
-
-        threshold = kwargs.get("threshold", 70)
-        threshold = 100.0 - threshold
-        threshold = min(255, max(0, int(threshold / 100.0 * 255)))
-
-        if red and not self.two_color_support:
+        if label_options.red and not self.two_color_support:
             raise BrotherQLUnsupportedCmd("Printing in red is not supported with the selected model.")
 
         try:
-            self.add_switch_mode()
+            self.data = self.add_switch_mode(self.data)
         except BrotherQLUnsupportedCmd:
             pass
 
-        self.add_invalidate()
-        self.add_initialize()
+        self.data = add_invalidate(self.data)
+        self.data = self.add_initialize(self.data)
 
         try:
-            self.add_switch_mode()
+            self.data = self.add_switch_mode(self.data)
         except BrotherQLUnsupportedCmd:
             pass
 
@@ -363,20 +275,20 @@ class BrotherQLRaster:
                 im = bg
             elif im.mode == "P":
                 # Convert GIF ("P") to RGB
-                im = im.convert("RGB" if red else "L")
-            elif im.mode == "L" and red:
+                im = im.convert("RGB" if label_options.red else "L")
+            elif im.mode == "L" and label_options.red:
                 # Convert greyscale to RGB if printing on black/red tape
                 im = im.convert("RGB")
 
-            if dpi_600:
+            if label_options.dpi_600:
                 dots_expected = [el * 2 for el in dots_printable]
             else:
                 dots_expected = dots_printable
 
             if label_specs["kind"] in (ENDLESS_LABEL, PTOUCH_ENDLESS_LABEL):
-                if rotate not in ("auto", 0):
-                    im = im.rotate(rotate, expand=True)
-                if dpi_600:
+                if label_options.rotate not in ("auto", 0):
+                    im = im.rotate(label_options.rotate, expand=True)
+                if label_options.dpi_600:
                     im = im.resize((im.size[0] // 2, im.size[1]))
                 if im.size[0] != dots_printable[0]:
                     hsize = int((dots_printable[0] / im.size[0]) * im.size[1])
@@ -387,27 +299,27 @@ class BrotherQLRaster:
                     new_im.paste(im, (device_pixel_width - im.size[0] - right_margin_dots, 0))
                     im = new_im
             elif label_specs["kind"] in (DIE_CUT_LABEL, ROUND_DIE_CUT_LABEL):
-                if rotate == "auto":
+                if label_options.rotate == "auto":
                     if im.size[0] == dots_expected[1] and im.size[1] == dots_expected[0]:
                         im = im.rotate(90, expand=True)
-                elif rotate != 0:
-                    im = im.rotate(rotate, expand=True)
+                elif label_options.rotate != 0:
+                    im = im.rotate(label_options.rotate, expand=True)
                 if im.size[0] != dots_expected[0] or im.size[1] != dots_expected[1]:
                     raise ValueError("Bad image dimensions: %s. Expecting: %s." % (im.size, dots_expected))
-                if dpi_600:
+                if label_options.dpi_600:
                     im = im.resize((im.size[0] // 2, im.size[1]))
                 new_im = Image.new(im.mode, (device_pixel_width, dots_expected[1]), (255,) * len(im.mode))
                 new_im.paste(im, (device_pixel_width - im.size[0] - right_margin_dots, 0))
                 im = new_im
 
-            if red:
+            if label_options.red:
                 filter_h = lambda h: 255 if (h < 40 or h > 210) else 0
                 filter_s = lambda s: 255 if s > 100 else 0
                 filter_v = lambda v: 255 if v > 80 else 0
                 red_im = filtered_hsv(im, filter_h, filter_s, filter_v)
                 red_im = red_im.convert("L")
                 red_im = PIL.ImageOps.invert(red_im)
-                red_im = red_im.point(lambda x: 0 if x < threshold else 255, mode="1")
+                red_im = red_im.point(lambda x: 0 if x < label_options.threshold else 255, mode="1")
 
                 filter_h = lambda h: 255
                 filter_s = lambda s: 255
@@ -415,18 +327,18 @@ class BrotherQLRaster:
                 black_im = filtered_hsv(im, filter_h, filter_s, filter_v)
                 black_im = black_im.convert("L")
                 black_im = PIL.ImageOps.invert(black_im)
-                black_im = black_im.point(lambda x: 0 if x < threshold else 255, mode="1")
+                black_im = black_im.point(lambda x: 0 if x < label_options.threshold else 255, mode="1")
                 black_im = PIL.ImageChops.subtract(black_im, red_im)
             else:
                 im = im.convert("L")
                 im = PIL.ImageOps.invert(im)
 
-                if dither:
+                if label_options.dither:
                     im = im.convert("1", dither=Image.FLOYDSTEINBERG)
                 else:
-                    im = im.point(lambda x: 0 if x < threshold else 255, mode="1")
+                    im = im.point(lambda x: 0 if x < label_options.threshold else 255, mode="1")
 
-            self.add_status_information()
+            self.data = add_status_information(self.data)
             tape_size = label_specs["tape_size"]
             if label_specs["kind"] in (DIE_CUT_LABEL, ROUND_DIE_CUT_LABEL):
                 self.mtype = 0x0B
@@ -440,31 +352,31 @@ class BrotherQLRaster:
                 self.mtype = 0x00
                 self.mwidth = tape_size[0]
                 self.mlength = 0
-            self.pquality = int(hq)
-            self.add_media_and_quality(im.size[1])
+            self.pquality = int(label_options.hq)
+            self.data = self.add_media_and_quality(self.data, im.size[1])
             try:
-                if cut:
-                    self.add_autocut(True)
-                    self.add_cut_every(1)
+                if label_options.cut:
+                    self.data = self.add_autocut(self.data, True)
+                    self.data = self.add_cut_every(self.data, 1)
             except BrotherQLUnsupportedCmd:
                 pass
             try:
-                self.dpi_600 = dpi_600
-                self.cut_at_end = cut
-                self.two_color_printing = True if red else False
-                self.add_expanded_mode()
+                self.dpi_600 = label_options.dpi_600
+                self.cut_at_end = label_options.cut
+                self.two_color_printing = True if label_options.red else False
+                self.data = self.add_expanded_mode(self.data)
             except BrotherQLUnsupportedCmd:
                 pass
-            self.add_margins(label_specs["feed_margin"])
+            self.data = add_margins(self.data, label_specs["feed_margin"])
             try:
-                if compress:
-                    self.add_compression(True)
+                if label_options.compress:
+                    self.data = self.add_compression(self.data, True)
             except BrotherQLUnsupportedCmd:
                 pass
-            if red:
-                self.add_raster_data(black_im, red_im)
+            if label_options.red:
+                self.data = self.add_raster_data(self.data, black_im, red_im)
             else:
-                self.add_raster_data(im)
-            self.add_print()
+                self.data = self.add_raster_data(self.data, im)
+            self.data = add_print(self.data)
 
         return self.data
