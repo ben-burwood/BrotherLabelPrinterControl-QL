@@ -1,13 +1,13 @@
 import logging
 
-from .devicedependent import DIE_CUT_LABEL, ENDLESS_LABEL, ROUND_DIE_CUT_LABEL, label_type_specs
+from ..devicedependent import DIE_CUT_LABEL, ENDLESS_LABEL, ROUND_DIE_CUT_LABEL, label_type_specs
 
 logger = logging.getLogger(__name__)
 
 
-def textual_label_description(labels_to_include):
+def textual_label_description(labels_to_include) -> str:
     output = "Supported label sizes:\n"
-    output = ""
+    output += ""
     fmt = " {label_size:9s} {dots_printable:14s} {label_descr:26s}\n"
     output += fmt.format(label_size="Name", dots_printable="Printable px", label_descr="Description")
     # output += fmt.format(label_size="", dots_printable="width x height", label_descr="")

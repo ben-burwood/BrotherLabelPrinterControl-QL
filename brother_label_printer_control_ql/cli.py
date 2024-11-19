@@ -48,7 +48,7 @@ def discover(ctx):
 def discover_and_list_available_devices(backend: Backend):
     available_devices = backend.discover()
 
-    from .output_helpers import log_discovered_devices
+    from brother_label_printer_control_ql.utils.output_helpers import log_discovered_devices
 
     log_discovered_devices(available_devices)
     print(available_devices)
@@ -77,7 +77,7 @@ def labels(ctx, *args, **kwargs):
     """
     List the choices for --label
     """
-    from .output_helpers import textual_label_description
+    from brother_label_printer_control_ql.utils.output_helpers import textual_label_description
 
     print(textual_label_description(label_sizes))
 
@@ -161,14 +161,13 @@ def print_cmd(ctx, *args, **kwargs):
     backend = Backend(ctx.meta.get("BACKEND", "pyusb"))
     model = ctx.meta.get("MODEL")
     printer = ctx.meta.get("PRINTER")
-    from .conversion import convert
     from .raster import BrotherQLRaster
 
     qlr = BrotherQLRaster(model)
     qlr.exception_on_warning = True
     kwargs["cut"] = not kwargs["no_cut"]
     del kwargs["no_cut"]
-    instructions = convert(qlr=qlr, **kwargs)
+    instructions = qlr.generate_instructions(**kwargs)
 
     printer = backend.printer(printer)
     printer.send(instructions=instructions, blocking=True)

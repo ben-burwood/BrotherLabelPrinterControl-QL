@@ -1,8 +1,7 @@
 import copy
 from dataclasses import dataclass
-from typing import Tuple
 
-from .helpers import ElementsManager
+from .utils.elements_manager import ElementsManager
 
 @dataclass
 class Model:
@@ -11,29 +10,29 @@ class Model:
     and the opcodes it supports should be contained in this class.
     """
 
-    #: A string identifier given to each model implemented. Eg. 'QL-500'.
+    # A string identifier given to each model implemented. Eg. 'QL-500'.
     identifier: str
-    #: Minimum and maximum number of rows or 'dots' that can be printed.
-    #: Together with the dpi this gives the minimum and maximum length
-    #: for continuous tape printing.
-    min_max_length_dots: Tuple[int, int]
-    #: The minimum and maximum amount of feeding a label
-    min_max_feed: Tuple[int, int] = (35, 1500)
+    # Minimum and maximum number of rows or 'dots' that can be printed.
+    # Together with the dpi this gives the minimum and maximum length
+    # for continuous tape printing.
+    min_max_length_dots: tuple[int, int]
+    # The minimum and maximum amount of feeding a label
+    min_max_feed: tuple[int, int] = (35, 1500)
     number_bytes_per_row: int = 90
-    #: The required additional offset from the right side
+    # The required additional offset from the right side
     additional_offset_r: int = 0
-    #: Support for the 'mode setting' opcode
+    # Support for the 'mode setting' opcode
     mode_setting: bool = True
-    #: Model has a cutting blade to automatically cut labels
+    # Model has a cutting blade to automatically cut labels
     cutting: bool = True
-    #: Model has support for the 'expanded mode' opcode.
-    #: (So far, all models that have cutting support do).
+    # Model has support for the 'expanded mode' opcode.
+    # (So far, all models that have cutting support do).
     expanded_mode: bool = True
-    #: Model has support for compressing the transmitted raster data.
-    #: Some models with only USB connectivity don't support compression.
+    # Model has support for compressing the transmitted raster data.
+    # Some models with only USB connectivity don't support compression.
     compression: bool = True
-    #: Support for two color printing (black/red/white)
-    #: available only on some newer models.
+    # Support for two color printing (black/red/white)
+    # available only on some newer models.
     two_color: bool = False
 
     @property

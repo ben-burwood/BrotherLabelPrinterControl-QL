@@ -74,7 +74,7 @@ def _populate_label_legacy_structures():
     global DIE_CUT_LABEL, ENDLESS_LABEL, ROUND_DIE_CUT_LABEL, PTOUCH_ENDLESS_LABEL
     global label_sizes, label_type_specs
 
-    from .labels import FormFactor
+    from brother_label_printer_control_ql.labels.form_factor import FormFactor
 
     DIE_CUT_LABEL = FormFactor.DIE_CUT
     ENDLESS_LABEL = FormFactor.ENDLESS

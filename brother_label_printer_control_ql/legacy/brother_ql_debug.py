@@ -2,8 +2,9 @@ import argparse
 import logging
 import time
 
+from brother_label_printer_control_ql.utils.hex import hex_format
 from ..backends import Backend
-from ..reader import OPCODES, chunker, hex_format, interpret_response, match_opcode, merge_specific_instructions
+from ..reader import OPCODES, chunker, interpret_response, match_opcode, merge_specific_instructions
 
 logger = logging.getLogger(__name__)
 

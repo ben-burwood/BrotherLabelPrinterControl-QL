@@ -2,7 +2,6 @@ import argparse
 import logging
 import sys
 
-from ..conversion import convert
 from ..devicedependent import label_type_specs
 from ..exceptions import BrotherQLUnknownModel
 from ..raster import BrotherQLRaster
@@ -15,8 +14,8 @@ except:
 logger = logging.getLogger(__name__)
 
 
-def create_label(qlr, image, label_size, threshold=70, cut=True, dither=False, compress=False, red=False, **kwargs):
-    convert(qlr, [image], label_size, threshold=threshold, cut=cut, dither=dither, compress=compress, red=red, **kwargs)
+def create_label(qlr: BrotherQLRaster, image, label_size, threshold=70, cut=True, dither=False, compress=False, red=False, **kwargs):
+    qlr.generate_instructions([image], label_size, threshold=threshold, cut=cut, dither=dither, compress=compress, red=red, **kwargs)
 
 
 def main():

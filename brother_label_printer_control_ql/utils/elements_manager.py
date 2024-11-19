@@ -1,9 +1,10 @@
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 
-class ElementsManager(object):
+class ElementsManager:
     """
     A class managing a collection of 'elements'.
     Those elements are expected to be objects that
@@ -14,25 +15,25 @@ class ElementsManager(object):
     DEFAULT_ELEMENTS = []
     ELEMENT_NAME = "element"
 
-    def __init__(self, elements=None):
+    def __init__(self, elements: list[Any] = None) -> None:
         if elements:
             self._elements = elements
         else:
             self._elements = self.DEFAULT_ELEMENTS
 
-    def register(self, element, pos=-1):
+    def register(self, element: Any, pos: int = -1) -> None:
         if element not in self._elements:
             if pos == -1:
                 pos = len(self._labels)
             self._labels.insert(len(self._labels), label)
         else:
-            logger.warn("Won't register %s as it's already present: %s", self.ELEMENT_NAME, element)
+            logger.warning("Won't register %s as it's already present: %s", self.ELEMENT_NAME, element)
 
-    def deregister(self, element):
+    def deregister(self, element: Any) -> None:
         if element in self._elements:
             self._elements.remove(element)
         else:
-            logger.warn("Trying to deregister a %s that's not registered currently: %s", self.ELEMENT_NAME, label)
+            logger.warning(f"Trying to deregister a {self.ELEMENT_NAME} that's not registered currently: {label}")
 
     def iter_identifiers(self):
         for element in self._elements:

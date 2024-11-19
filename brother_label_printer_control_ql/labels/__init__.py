@@ -1,39 +1,10 @@
 import copy
 from dataclasses import dataclass, field
-from enum import IntEnum
-from typing import List, Tuple
 
-from .devicedependent import models
-from .helpers import ElementsManager
-
-class FormFactor(IntEnum):
-    """
-    Enumeration representing the form factor of a label.
-    The labels for the Brother QL series are supplied either as die-cut (pre-sized), or for more flexibility the
-    continuous label tapes offer the ability to vary the label length.
-    """
-
-    #: rectangular die-cut labels
-    DIE_CUT = 1
-    #: endless (continouse) labels
-    ENDLESS = 2
-    #: round die-cut labels
-    ROUND_DIE_CUT = 3
-    #: endless P-touch labels
-    PTOUCH_ENDLESS = 4
-
-
-class Color(IntEnum):
-    """
-    Enumeration representing the colors to be printed on a label. Most labels only support printing black on white.
-    Some newer ones can also print in black and red on white.
-    """
-
-    #: The label can be printed in black & white.
-    BLACK_WHITE = 0
-    #: The label can be printed in black, white & red.
-    BLACK_RED_WHITE = 1
-
+from .color import Color
+from .form_factor import FormFactor
+from ..devicedependent import models
+from ..utils.elements_manager import ElementsManager
 
 @dataclass
 class Label:
@@ -43,25 +14,25 @@ class Label:
     label choosen, should be contained in this class.
     """
 
-    #: A string identifier given to each label that can be selected. Eg. '29'.
+    # A string identifier given to each label that can be selected. Eg. '29'.
     identifier: str
-    #: The tape size of a single label (width, lenght) in mm. For endless labels, the length is 0 by definition.
-    tape_size: Tuple[int, int]
-    #: The type of label
+    # The tape size of a single label (width, lenght) in mm. For endless labels, the length is 0 by definition.
+    tape_size: tuple[int, int]
+    # The type of label
     form_factor: FormFactor
-    #: The total area (width, length) of the label in dots (@300dpi).
-    dots_total: Tuple[int, int]
-    #: The printable area (width, length) of the label in dots (@300dpi).
-    dots_printable: Tuple[int, int]
-    #: The required offset from the right side of the label in dots to obtain a centered printout.
+    # The total area (width, length) of the label in dots (@300dpi).
+    dots_total: tuple[int, int]
+    # The printable area (width, length) of the label in dots (@300dpi).
+    dots_printable: tuple[int, int]
+    # The required offset from the right side of the label in dots to obtain a centered printout.
     offset_r: int
-    #: An additional amount of feeding when printing the label.
-    #: This is non-zero for some smaller label sizes and for endless labels.
+    # An additional amount of feeding when printing the label.
+    # This is non-zero for some smaller label sizes and for endless labels.
     feed_margin: int = 0
-    #: If a label can only be printed with certain label printers, this member variable lists the allowed ones.
-    #: Otherwise it's an empty list.
-    restricted_to_models: List[str] = field(default_factory=list)
-    #: Some labels allow printing in red, most don't.
+    # If a label can only be printed with certain label printers, this member variable lists the allowed ones.
+    # Otherwise it's an empty list.
+    restricted_to_models: list[str] = field(default_factory=list)
+    # Some labels allow printing in red, most don't.
     color: Color = Color.BLACK_WHITE
 
     def works_with_model(self, model) -> bool:
