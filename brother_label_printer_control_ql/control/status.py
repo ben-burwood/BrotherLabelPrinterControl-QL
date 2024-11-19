@@ -1,13 +1,7 @@
 from dataclasses import dataclass
-from enum import Enum, auto
 from logging import Logger
 
-
-class PrintOutcome(Enum):
-    UNKNOWN = auto()
-    SENT = auto()
-    PRINTED = auto()
-    ERROR = auto()
+from .outcome import PrintOutcome
 
 
 @dataclass

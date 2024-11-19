@@ -1,7 +1,8 @@
 import click
 
-from brother_label_printer_control_ql.backends import Backend
-from brother_label_printer_control_ql.utils.output_helpers import log_discovered_devices
+from ..backends import Backend
+from ..utils.output_helpers import log_discovered_devices
+
 
 @click.command()
 @click.pass_context

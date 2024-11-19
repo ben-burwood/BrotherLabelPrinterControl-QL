@@ -12,6 +12,7 @@ import select
 from .abstract import BaseBrotherQLBackend
 from .strategies import RetryStrategy
 
+
 class BrotherQLBackendLinuxKernel(BaseBrotherQLBackend):
     """
     BrotherQL backend using the Linux Kernel USB Printer Device Handles

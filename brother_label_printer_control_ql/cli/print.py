@@ -1,9 +1,10 @@
 import click
 
-from brother_label_printer_control_ql.backends import Backend
-from brother_label_printer_control_ql.labels import Labels
-from brother_label_printer_control_ql.models import Models
-from brother_label_printer_control_ql.raster import BrotherQLRaster
+from ..backends import Backend
+from ..labels import Labels
+from ..models import Models
+from ..raster import BrotherQLRaster
+
 
 @click.command("print", short_help="Print a label")
 @click.argument("images", nargs=-1, type=click.File("rb"), metavar="IMAGE [IMAGE] ...")

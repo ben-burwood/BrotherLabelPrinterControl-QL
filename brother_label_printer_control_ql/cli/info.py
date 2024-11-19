@@ -5,9 +5,10 @@ import sys
 import click
 from pkg_resources import get_distribution
 
-from brother_label_printer_control_ql.labels import Labels
-from brother_label_printer_control_ql.models import Models
-from brother_label_printer_control_ql.utils.output_helpers import textual_label_description
+from ..labels import Labels
+from ..models import Models
+from ..utils.output_helpers import textual_label_description
+
 
 @click.group()
 @click.pass_context

@@ -1,6 +1,7 @@
 import click
 
-from brother_label_printer_control_ql.backends import Backend
+from ..backends import Backend
+
 
 @click.command(name="send", short_help="send an instruction file to the printer")
 @click.argument("instructions", type=click.File("rb"))

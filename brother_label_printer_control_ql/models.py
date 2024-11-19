@@ -3,6 +3,7 @@ from enum import Enum
 
 from .exceptions import BrotherQLUnknownModel
 
+
 @dataclass
 class Model:
     """

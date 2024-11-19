@@ -2,9 +2,11 @@ import argparse
 import logging
 import time
 
-from brother_label_printer_control_ql.backends import Backend
-from brother_label_printer_control_ql.reader import OPCODES, chunker, interpret_response, match_opcode, merge_specific_instructions
-from brother_label_printer_control_ql.utils.hex import hex_format
+from ...backends import Backend
+from ...control.op_codes import match_opcode
+from ...control.response import PrinterResponse
+from ...reader import chunker, merge_specific_instructions
+from ...utils.hex import hex_format
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +45,10 @@ class BrotherQL_USBdebug(object):
                 self.log_interp_response(data)
             time.sleep(0.001)
 
-    def log_interp_response(self, data):
+    def log_interp_response(self, data: bytes):
         try:
-            interp_result = interpret_response(data)
-            logger.info("Interpretation of the response: '{status_type}' (phase: {phase_type}), '{media_type}' {media_width}x{media_length} mm^2, errors: {errors}".format(**interp_result))
+            interp_result = PrinterResponse.from_bytes(data, logger)
+            logger.info(interp_result)
         except:
             logger.error("Couln't interpret response: %s", hex_format(data))
 
@@ -58,14 +60,12 @@ class BrotherQL_USBdebug(object):
         instructions = merge_specific_instructions(instructions, join_preamble=True, join_raster=self.merge_specific_instructions)
         for instruction in instructions:
             opcode = match_opcode(instruction)
-            opcode_def = OPCODES[opcode]
-            cmd_name = opcode_def[0]
             hex_instruction = hex_format(instruction).split()
             if len(hex_instruction) > 100:
                 hex_instruction = " ".join(hex_instruction[0:70] + ["[...]"] + hex_instruction[-30:])
             else:
                 hex_instruction = " ".join(hex_instruction)
-            logger.info("CMD {} FOUND. Instruction: {} ".format(cmd_name, hex_instruction))
+            logger.info("CMD {} FOUND. Instruction: {} ".format(opcode.name, hex_instruction))
             if self.interactive:
                 input("Continue?")
             # WRITE

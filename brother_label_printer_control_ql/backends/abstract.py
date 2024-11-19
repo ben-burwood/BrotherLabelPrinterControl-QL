@@ -3,8 +3,10 @@ import time
 from abc import ABC, abstractmethod
 from builtins import bytes
 
-from .status import PrintOutcome, SendStatus
-from ..reader import interpret_response
+from ..control.constants import RespPhaseTypes, RespStatusTypes
+from ..control.outcome import PrintOutcome
+from ..control.response import PrinterResponse
+from ..control.status import SendStatus
 
 logger = logging.getLogger(__name__)
 
@@ -73,20 +75,20 @@ class BaseBrotherQLBackend(ABC):
                 time.sleep(0.005)
                 continue
             try:
-                result = interpret_response(data)
+                result = PrinterResponse.from_bytes(data, logger)
             except ValueError:
                 logger.error("TIME %.3f - Couldn't understand response: %s", time.time() - start, data)
                 continue
             status.printer_state = result
             logger.debug("TIME %.3f - result: %s", time.time() - start, result)
-            if result["errors"]:
-                logger.error("Errors occurred: %s", result["errors"])
+            if result.errors:
+                logger.error("Errors occurred: %s", result.errors)
                 status.outcome = PrintOutcome.ERROR
                 break
-            if result["status_type"] == "Printing completed":
+            if result.status_type == RespStatusTypes.PRINTING_COMPLETED:
                 status.did_print = True
                 status.outcome = PrintOutcome.PRINTED
-            if result["status_type"] == "Phase change" and result["phase_type"] == "Waiting to receive":
+            if result.status_type == RespStatusTypes.PHASE_CHANGE and result.phase_type == RespPhaseTypes.WAITING_TO_RECEIVE:
                 status.ready_for_next_job = True
             if status.did_print and status.ready_for_next_job:
                 break

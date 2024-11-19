@@ -1,7 +1,8 @@
 import argparse
 
-from brother_label_printer_control_ql.labels import FormFactor, Labels
-from brother_label_printer_control_ql.models import Models
+from ...labels import FormFactor, Labels
+from ...models import Models
+
 
 def main():
     parser = argparse.ArgumentParser()

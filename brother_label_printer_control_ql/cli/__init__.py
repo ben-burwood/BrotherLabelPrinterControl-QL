@@ -2,13 +2,13 @@ import logging
 
 import click
 
-from brother_label_printer_control_ql.backends import Backend
-from brother_label_printer_control_ql.models import Models
 from .analyse import analyze_cmd
 from .discover import discover
 from .info import info
 from .print import print_cmd
 from .send import send_cmd
+from ..backends import Backend
+from ..models import Models
 
 logger = logging.getLogger("brother_ql")
 
