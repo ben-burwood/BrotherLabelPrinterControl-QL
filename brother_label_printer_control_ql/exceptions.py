@@ -10,5 +10,9 @@ class BrotherQLUnknownModel(BrotherQLError):
     pass
 
 
+class BrotherQLUnknownLabel(BrotherQLError):
+    pass
+
+
 class BrotherQLRasterError(BrotherQLError):
     pass

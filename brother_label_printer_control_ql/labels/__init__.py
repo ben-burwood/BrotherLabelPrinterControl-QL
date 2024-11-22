@@ -3,6 +3,7 @@ from enum import Enum
 
 from .color import Color
 from .form_factor import FormFactor
+from ..exceptions import BrotherQLUnknownLabel
 from ..models import Model, Models
 
 
@@ -90,8 +91,7 @@ class Labels(Enum):
         for label in Labels:
             if label.value.identifier == identifier:
                 return label.value
-        else:
-            raise ValueError(f"Label with identifier '{identifier}' not found.")
+        raise BrotherQLUnknownLabel(f"Label with identifier '{identifier}' not found.")
 
     @staticmethod
     def identifiers() -> list[str]:

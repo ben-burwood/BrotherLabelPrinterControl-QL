@@ -33,7 +33,7 @@ This means that even though Brother doesn't offer a driver for the Raspberry Pi 
 Linux on ARM) you can print nicely using this software.
 And even if there are drivers for your operating system, many programs have difficulties to set
 the page sizes and margins for the labels correctly.
-If you want to print with high precision (which is important for barcodes for example),
+If you want to print with highecision (which is important for barcodes for example),
 you rather want to have control about every single pixel to be printed.
 This is where brother\_ql comes into the game.
 
@@ -170,11 +170,11 @@ it will be scaled to fit the width.
 
 There are multiple backends for connecting to the printer available (✔: supported, ✘: not supported):
 
-Backend | Kind | Linux | Mac OS | Windows
--------|-------|---------|---------|--------
-network (1) | TCP | ✔ | ✔ | ✔
-linux\_kernel | USB | ✔ (2) | ✘ | ✘
-pyusb (3) | USB | ✔ (3.1) | ✔ (3.2) | ✔ (3.3)
+ Backend       | Kind | Linux   | Mac OS  | Windows 
+---------------|------|---------|---------|---------
+ network (1)   | TCP  | ✔       | ✔       | ✔       
+ linux\_kernel | USB  | ✔ (2)   | ✘       | ✘       
+ pyusb (3)     | USB  | ✔ (3.1) | ✔ (3.2) | ✔ (3.3) 
 
 Notes:
 
@@ -184,11 +184,11 @@ Notes:
    Please check the ownership (user, group) of this file to be able to print as a regular user.
    Consider setting up a udev .rules file.
 3. PyUSB is a Python wrapper allowing to implement USB communication in userspace.
-   1. On Linux: install libusb1 as offered by your distribution: `sudo apt-get install libusb-1.0-0` (Ubuntu, Debian), `sudo zyppe in libusb-1_0-0` (OpenSUSE), `sudo pacman -S libusb` (Arch).
-   2. On Mac OS: Install [Homebrew](https://brew.sh/) and then install libusb1 using: `brew install libusb`.
-   3. On Windows: download [libusb-win32-devel-filter-1.2.6.0.exe](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/)
-      from sourceforge and install it.
-      After installing, you have to use the "Filter Wizard" to setup a "device filter" for the label printer.
+    1. On Linux: install libusb1 as offered by your distribution: `sudo apt-get install libusb-1.0-0` (Ubuntu, Debian), `sudo zyppe in libusb-1_0-0` (OpenSUSE), `sudo pacman -S libusb` (Arch).
+    2. On Mac OS: Install [Homebrew](https://brew.sh/) and then install libusb1 using: `brew install libusb`.
+    3. On Windows: download [libusb-win32-devel-filter-1.2.6.0.exe](https://sourceforge.net/projects/libusb-win32/files/libusb-win32-releases/1.2.6.0/)
+       from sourceforge and install it.
+       After installing, you have to use the "Filter Wizard" to setup a "device filter" for the label printer.
 
 ### Legacy command line tools
 
@@ -228,9 +228,15 @@ Thanks to everyone helping to improve brother\_ql.
 * A curated list of related and unrelated software can be found [in this document][related-unrelated].
 
 [author's wishlist]: https://www.amazon.de/registry/wishlist/3GSVLPF08AFIR
+
 [donation]: https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=philipp.klaus@gmail.com&lc=US&item_name=Donation+to+brother_ql+Development&no_note=0&cn=&currency_code=USD&bn=PP-DonationsBF:btn_donateCC_LG.gif:NonHosted
+
 [brother\_ql\_web]: https://github.com/pklaus/brother_ql_web
+
 [LEGACY]: https://github.com/pklaus/brother_ql/blob/master/LEGACY.md
+
 [pklaus/brother\_ql]: https://github.com/pklaus/brother_ql
+
 [PyPI]: https://pypi.python.org/pypi/brother_ql
+
 [related-unrelated]: https://gist.github.com/pklaus/aeb55e18d36690df6a84a3eab49e9fd7

@@ -7,7 +7,6 @@ from PIL import Image
 from .exceptions import BrotherQLRasterError
 from .models import Model
 
-
 def add_initialize(data: bytes) -> bytes:
     data += b"\x1B\x40"  # ESC @
     return data
@@ -115,7 +114,7 @@ def add_raster_data(data: bytes, model: Model, compression: bool, image: Image, 
 
     frames = []
     for image in images:
-        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        image = image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         image = image.convert("1")
         frames.append(bytes(image.tobytes(encoder_name="raw")))
 
@@ -129,7 +128,7 @@ def add_raster_data(data: bytes, model: Model, compression: bool, image: Image, 
             if compression:
                 row = packbits.encode(row)
             translen = len(row)  # number of bytes to be transmitted
-            if model.startswith("PT"):
+            if model.identifier.startswith("PT"):
                 file_str.write(b"\x47")
                 file_str.write(bytes([translen % 256, translen // 256]))
             else:

@@ -149,8 +149,8 @@ class BrotherQLBackendPyUSB(BaseBrotherQLBackend):
 
     @staticmethod
     def extract_vendor_product_serial_from_device_identifier(device_identifier: str) -> tuple[int, int, str]:
-        device_identifier.lstrip("usb://")
+        device_identifier = device_identifier.lstrip("usb://")
         vendor_product, _, serial = device_identifier.partition("/")
-        vendor, _, product = vendor_product.partition(":")
+        vendor, product = vendor_product.split(":")
         vendor, product = int(vendor, 16), int(product, 16)
         return vendor, product, serial

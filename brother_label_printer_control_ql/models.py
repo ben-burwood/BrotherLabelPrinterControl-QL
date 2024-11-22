@@ -3,7 +3,6 @@ from enum import Enum
 
 from .exceptions import BrotherQLUnknownModel
 
-
 @dataclass
 class Model:
     """
@@ -65,10 +64,10 @@ class Models(Enum):
 
     @staticmethod
     def from_identifier(identifier: str) -> Model:
-        try:
-            return Models[identifier.upper()].value
-        except KeyError:
-            raise BrotherQLUnknownModel(f"Model '{identifier}' not implemented.")
+        for model in Models:
+            if model.value.identifier == identifier:
+                return model.value
+        raise BrotherQLUnknownModel(f"Model '{identifier}' not implemented.")
 
     @staticmethod
     def identifiers() -> list[str]:

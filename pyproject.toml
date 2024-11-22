@@ -12,9 +12,17 @@ authors = [
     { name = "Philipp Klaus", email = "philipp.l.klaus@web.de" },
     { name = "Ben Burwood", email = "ben.burwood@outlook.com" }
 ]
-
-[project.urls]
-Homepage = "https://github.com/pklaus/brother_ql"
+dependencies = [
+    "click==8.1.7",
+    "colorama==0.4.6",
+    "mypy-extensions==1.0.0",
+    "packaging==24.2",
+    "packbits==0.6",
+    "pathspec==0.12.1",
+    "pillow==11.0.0",
+    "platformdirs==4.3.6",
+    "pyusb==1.2.1"
+]
 
 [project.scripts]
 brother_ql = "brother_label_printer_control_ql.cli.__init__:cli"

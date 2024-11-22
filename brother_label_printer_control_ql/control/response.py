@@ -7,9 +7,9 @@ from brother_label_printer_control_ql.control.constants import (
     RespPhaseTypes,
     RespStatusTypes,
 )
+
 from .errors import RespErrorInformation1, RespErrorInformation2
 from ..utils.hex import hex_format
-
 
 @dataclass(frozen=True)
 class PrinterResponse:
@@ -46,24 +46,24 @@ class PrinterResponse:
         media_length = data[17]
 
         media_type = data[11]
-        if media_type in RespMediaTypes:
+        try:
             media_type = RespMediaTypes(media_type)
             logger.debug("Media type: %s", media_type.name)
-        else:
+        except ValueError:
             logger.error("Unknown media type %02X", media_type)
 
         status_type = data[18]
-        if status_type in RespStatusTypes:
+        try:
             status_type = RespStatusTypes(status_type)
             logger.debug("Status type: %s", status_type.name)
-        else:
+        except ValueError:
             logger.error("Unknown status type %02X", status_type)
 
         phase_type = data[19]
-        if phase_type in RespPhaseTypes:
+        try:
             phase_type = RespPhaseTypes(phase_type)
             logger.debug("Phase type: %s", phase_type.name)
-        else:
+        except ValueError:
             logger.error("Unknown phase type %02X", phase_type)
 
         return PrinterResponse(
